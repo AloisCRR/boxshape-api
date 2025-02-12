@@ -9,6 +9,9 @@ import { ClerkAuthGuard } from "./auth/clerk-auth.guard";
 import { ClerkClientProvider } from "./auth/clerk-client.provider";
 import { ClientsModule } from "./clients/clients.module";
 import { PrismaTenancyModule } from "./common/prisma/prisma-tenancy.module";
+import { InvoiceItemsModule } from "./invoice-items/invoice-items.module";
+import { InvoicesModule } from "./invoices/invoices.module";
+import { ShipmentsModule } from "./shipments/shipments.module";
 import { WebhookModule } from "./webhook/webhook.module";
 
 @Module({
@@ -21,9 +24,12 @@ import { WebhookModule } from "./webhook/webhook.module";
 			autoSchemaFile: join(process.cwd(), "src/schema.gql"),
 		}),
 		AuthModule,
-		ClientsModule,
-		PrismaTenancyModule,
 		WebhookModule,
+		PrismaTenancyModule,
+		ClientsModule,
+		InvoicesModule,
+		InvoiceItemsModule,
+		ShipmentsModule,
 	],
 	controllers: [],
 	providers: [

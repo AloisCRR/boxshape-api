@@ -3,6 +3,7 @@ import {
 	Injectable,
 	Logger,
 	NotFoundException,
+	OnModuleDestroy,
 	UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -12,11 +13,10 @@ import { createClient as createTursoClient } from "@tursodatabase/api"; // Impor
 import { createHash } from "node:crypto";
 
 @Injectable()
-export class PrismaTenancyService {
-	private readonly logger = new Logger(PrismaTenancyService.name, {
-		timestamp: true,
-	});
+export class PrismaTenancyService implements OnModuleDestroy {
+	private readonly logger = new Logger(PrismaTenancyService.name);
 	private tursoClient;
+	private prismaClients: Map<string, PrismaClient> = new Map();
 
 	constructor(private readonly configService: ConfigService) {
 		this.tursoClient = createTursoClient({
@@ -25,52 +25,46 @@ export class PrismaTenancyService {
 		});
 	}
 
-	async initializePrismaClient(dbName: string) {
+	async getPrismaClient(dbName: string) {
 		if (!dbName) {
 			throw new UnauthorizedException("User not authenticated");
 		}
 
 		const hashedDbName = createHash("md5").update(dbName).digest("hex");
 
-		this.logger.log(`Checking database ${hashedDbName} exists`);
+		const cachedClient = this.prismaClients.get(hashedDbName);
 
+		// Return existing client if available
+		if (cachedClient) {
+			return cachedClient;
+		}
+
+		// Create new client if database exists
 		const databaseExists = await this.checkDatabaseExists(hashedDbName);
-
 		if (!databaseExists) {
 			throw new NotFoundException(`Database ${dbName} not found`);
 		}
 
-		this.logger.log(`Database ${dbName} exists`);
+		const client = await this.createPrismaClient(hashedDbName);
+		this.prismaClients.set(hashedDbName, client);
 
-		this.logger.log(`Initializing Prisma client for database ${dbName}`);
+		return client;
+	}
 
+	private async createPrismaClient(hashedDbName: string) {
 		const url = this.getDatabaseUrl(hashedDbName);
-
 		const libsql = createLibsqlClient({
 			url: url,
 			authToken: this.configService.getOrThrow("TURSO_GROUP_AUTH_TOKEN"),
 		});
 
 		const adapter = new PrismaLibSQL(libsql);
-
 		const prisma = new PrismaClient({
 			adapter,
-			log: [
-				"query",
-				"info",
-				"warn",
-				"error",
-				{ emit: "event", level: "query" },
-			],
-		});
-
-		prisma.$on("query", (event) => {
-			this.logger.log(`Query duration: ${event.duration}ms`);
+			log: ["query", "info", "warn", "error"],
 		});
 
 		await prisma.$connect();
-
-		this.logger.log(`Prisma client initialized for database ${dbName}`);
 
 		return prisma;
 	}
@@ -87,5 +81,11 @@ export class PrismaTenancyService {
 
 	private getDatabaseUrl(dbName: string): string {
 		return `libsql://${dbName}-${this.configService.getOrThrow("TURSO_ORG")}.turso.io`;
+	}
+
+	async onModuleDestroy() {
+		await Promise.all(
+			[...this.prismaClients.values()].map((client) => client.$disconnect()),
+		);
 	}
 }

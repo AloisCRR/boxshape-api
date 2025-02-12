@@ -1,4 +1,4 @@
-import { ClientEntity } from "../client.entity";
+import { ClientEntity } from "@/clients/client.entity";
 import { CreateClientInput } from "../dto/create-client.input";
 
 export interface IClientsRepository {
@@ -7,4 +7,5 @@ export interface IClientsRepository {
 		tenantId: string,
 	): Promise<ClientEntity>;
 	getAllClients(tenantId: string): Promise<ClientEntity[]>;
+	getClientById(id: string, tenantId: string): Promise<ClientEntity>;
 }

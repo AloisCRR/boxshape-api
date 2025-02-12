@@ -14,12 +14,77 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+// Define dictionary tables for enums
+model InvoiceStatus {
+  id   String @id @default(cuid())
+  name String @unique
+
+  // Relationships
+  invoices Invoice[]
+}
+
+model ShipmentType {
+  id   String @id @default(cuid())
+  name String @unique
+
+  // Relationships
+  shipments Shipment[]
+}
+
+// Define main tables
 model Client {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  phone     String?
-  address   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id      String   @id @default(cuid())
+  name    String
+  email   String   @unique
+  phone   String?  @unique
+  address String?
+  created DateTime @default(now())
+  updated DateTime @updatedAt
+
+  // Relationships
+  invoices  Invoice[]
+  shipments Shipment[]
+}
+
+model Invoice {
+  id       String   @id @default(uuid())
+  number   String   @unique
+  clientId String
+  statusId String
+  created  DateTime @default(now())
+  updated  DateTime @updatedAt
+
+  // Relationships
+  client       Client        @relation(fields: [clientId], references: [id])
+  status       InvoiceStatus @relation(fields: [statusId], references: [id])
+  invoiceItems InvoiceItem[]
+}
+
+model InvoiceItem {
+  id            String  @id @default(uuid())
+  invoiceNumber String
+  amount        Float
+  trackingCode  String  @unique
+  description   String?
+  shipmentId    String
+
+  // Relationships
+  invoice  Invoice  @relation(fields: [invoiceNumber], references: [number])
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+}
+
+model Shipment {
+  id             String   @id @default(uuid())
+  clientId       String
+  shipmentTypeId String
+  price          Float
+  unit           String
+  poBoxNumber    String?  @unique
+  created        DateTime @default(now())
+  updated        DateTime @updatedAt
+
+  // Relationships
+  client       Client        @relation(fields: [clientId], references: [id])
+  shipmentType ShipmentType  @relation(fields: [shipmentTypeId], references: [id])
+  invoiceItems InvoiceItem[]
 }

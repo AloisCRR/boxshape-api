@@ -1,0 +1,66 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Generate Migration",
+			"type": "shell",
+			"command": "pnpx",
+			"args": ["prisma", "migrate", "dev", "--name", "${input:migrationName}"],
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "new"
+			}
+		},
+		{
+			"label": "Run Migration",
+			"type": "shell",
+			"command": "turso",
+			"args": [
+				"db",
+				"shell",
+				"${input:databaseSchema}",
+				"<",
+				"${input:migrationFile}"
+			],
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "new"
+			}
+		},
+		// Generate Prisma Client
+		{
+			"label": "Generate Prisma Client",
+			"type": "shell",
+			"command": "pnpm",
+			"args": ["prisma", "generate"],
+			"problemMatcher": []
+		}
+	],
+	"inputs": [
+		{
+			"id": "migrationName",
+			"type": "promptString",
+			"description": "Enter the name for the new migration:",
+			"default": "new_migration"
+		},
+		{
+			"id": "databaseSchema",
+			"type": "promptString",
+			"description": "Enter the database schema name:",
+			"default": "boxshape-schema"
+		},
+		{
+			"id": "migrationFile",
+			"type": "command",
+			"command": "extension.commandvariable.file.pickFile",
+			"args": {
+				"include": "**/prisma/migrations/**/migration.sql",
+				"exclude": "**/node_modules/**",
+				"display": "fileName",
+				"description": "Select the migration file to run"
+			}
+		}
+	]
+}

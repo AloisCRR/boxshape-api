@@ -1,8 +1,8 @@
+import { ClientEntity } from "@/clients/client.entity";
 import { Field, ID, ObjectType } from "@nestjs/graphql";
-import { ClientEntity } from "./client.entity";
 
 @ObjectType({ description: "Client of the business" })
-export class Client implements ClientEntity {
+export class ClientModel implements ClientEntity {
 	@Field((type) => ID)
 	id: string;
 
@@ -12,9 +12,15 @@ export class Client implements ClientEntity {
 	@Field()
 	email: string;
 
-	@Field()
-	createdAt: Date;
+	@Field({ nullable: true })
+	phone?: string;
+
+	@Field({ nullable: true })
+	address?: string;
 
 	@Field()
-	updatedAt: Date;
+	created: Date;
+
+	@Field()
+	updated: Date;
 }
